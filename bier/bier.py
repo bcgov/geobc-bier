@@ -223,10 +223,10 @@ def Create_S3_Connection(variable_endpoint, variable_id, variable_key):
         Access file from S3 Object Storage. Can choose to download or not. If downloaded returns the downloaded file path.
         
                 Parameters:
-                        s3_path (str): Secret access key
-                        filename (str): Access key ID
-                        download (bool): Secret access key
-                        download_path (str):
+                        s3_path (str): Path within S3 bucket where object resides
+                        filename (str): Name of object to access
+                        download (bool): Download to storage (otherwise object is accessed through memory)
+                        download_path (str): Path to where you want to download the object
 
                 Returns:
                         s3_object (obj): Minio object representing object/item in S3 Object Storage
@@ -246,11 +246,11 @@ def Create_S3_Connection(variable_endpoint, variable_id, variable_key):
         Upload file to S3 Object Storage. s3_path parameter must include filename. Objects to set content type and public read permission.
         
                 Parameters:
-                        s3_path (str): Secret access key
-                        upload_file_path (str): Access key ID
-                        content_type (bool): Secret access key
-                        public (str):
-                        part_size (int):
+                        s3_path (str): Path within S3 bucket to put new object
+                        upload_file_path (str): Path on storage where file to upload is
+                        content_type (str): Content-Type header for S3
+                        public (bool): True if you want to automatically set object to public on upload
+                        part_size (int): Objects in S3 are uploaded in parts, this sets the size for each part
 
                 Returns:
                         s3_object (obj): Minio object representing object/item in S3 Object Storage
