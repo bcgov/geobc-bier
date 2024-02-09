@@ -19,17 +19,17 @@ jobs:
     - name: Set up Conda environment
       uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: bier-env
+        activate-environment: bier_env
         python-version: 3.9
 
     - name: Install dependencies
       shell: bash
       run: |
-        conda env update --file Avalanche-Canada-Forecasts/environment.yaml --name bier-env
+        conda env update --file Avalanche-Canada-Forecasts/environment.yaml --name bier_env
         conda env list
         conda init bash
         . ~/.bashrc
-        conda activate bier-env
+        conda activate bier_env
 
     - name: Add BIER module to Path
       shell: bash
