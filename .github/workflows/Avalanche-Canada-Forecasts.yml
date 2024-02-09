@@ -16,22 +16,10 @@ jobs:
       with:
         python-version: "3.11"
     
-    - name: Set up Conda environment
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: bier_env
-        python-version: 3.11
-
     - name: Install dependencies
-      shell: bash
       run: |
-        conda env 
-        conda env update --file Avalanche-Canada-Forecasts/environment.yaml --name bier_env
-        python -m pip install .
-        conda env list
-        conda init bash
-        . ~/.bashrc
-        conda activate bier_env
+        python -m pip install --upgrade pip
+        pip install -r Avalanche-Canada-Forecasts/requirements.txt
         
     - name: Run script
       shell: bash
@@ -40,11 +28,5 @@ jobs:
         AGO_USER: ${{secrets.AGO_USER}}
         AGO_PASS: ${{secrets.AGO_PASS}}
         AVALANCHEFORECAST_ITEMID: ${{secrets.AVALANCHEFORECAST_ITEMID}}
-        
       run: |
-        # you may have to activate the environment before running the 
-        # python script, and you likley need to say python3 vs just python
-        conda init bash
-        . ~/.bashrc
-        conda activate bier_env
-        python3 Avalanche-Canada-Forecasts/Avalanche_Canada_Forecasts.py
+        python Avalanche-Canada-Forecasts/Avalanche_Canada_Forecasts.py
