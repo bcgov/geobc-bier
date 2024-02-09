@@ -34,7 +34,7 @@ jobs:
     - name: Add BIER module to Path
       shell: bash
       run: |
-         echo "$GITHUB_WORKSPACE/bier/bier.py" >> $GITHUB_PATH
+         echo "$GITHUB_WORKSPACE/bier" >> $GITHUB_PATH
         
     - name: Run script
       shell: bash
