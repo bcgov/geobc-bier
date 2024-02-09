@@ -27,7 +27,7 @@ jobs:
       run: |
         conda env 
         conda env update --file Avalanche-Canada-Forecasts/environment.yaml --name bier_env
-        pip install --file bier/bier.py
+        python -m pip install .
         conda env list
         conda init bash
         . ~/.bashrc
