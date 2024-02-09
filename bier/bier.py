@@ -73,13 +73,12 @@ class AGO_Connection():
             self.username = username
             self.password = password
         else:
-            if 'JENKINS_URL' in os.environ:
-                self.username = sys.argv[username_arg_pos]
-                self.password = sys.argv[password_arg_pos]
+            try
+                self.username = os.environ[AGO_USER]
+                self.password = os.environ[AGO_PASS]
                 _log.info(self.username)
-                _log.info(self.username)
-                _log.info("System arguement AGO credentials found")
-            else:
+                _log.info("Environment AGO credentials found")
+            except:
                 if os.environ.get('GEOHUB_USERNAME') is not None:
                     self.username = os.getenv('GEOHUB_USERNAME')
                     self.password = os.getenv('GEOHUB_PASSWORD')
