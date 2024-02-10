@@ -28,7 +28,7 @@ jobs:
         conda env list
         conda init bash
         . ~/.bashrc
-        conda activate trapper_env
+        conda activate bier_env
 
     - name: Set pythonpath
       run: |
