@@ -73,7 +73,7 @@ class AGO_Connection():
             self.username = username
             self.password = password
         else:
-            try
+            try:
                 self.username = os.environ[AGO_USER]
                 self.password = os.environ[AGO_PASS]
                 _log.info(self.username)
