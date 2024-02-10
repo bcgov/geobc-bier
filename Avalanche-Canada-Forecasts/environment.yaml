@@ -6,3 +6,5 @@ channels:
 dependencies:
   - python=3.11
   - arcgis
+  - pip:
+    - "--editable=git+https://github.com/bcgov/geobc-bier.git#egg=bier&subdirectory=bier"
