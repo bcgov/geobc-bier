@@ -74,8 +74,8 @@ class AGO_Connection():
             self.password = password
         else:
             try:
-                self.username = os.environ[AGO_USER]
-                self.password = os.environ[AGO_PASS]
+                self.username = os.environ['AGO_USER']
+                self.password = os.environ['AGO_PASS']
                 _log.info(self.username)
                 _log.info("Environment AGO credentials found")
             except:
