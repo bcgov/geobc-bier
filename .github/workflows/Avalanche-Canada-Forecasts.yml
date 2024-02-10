@@ -1,0 +1,49 @@
+name: Avalanche Canada Forecasts
+
+on:
+  schedule:
+    - cron: '15 * * * *'
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Set up Conda environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: bier_env
+        python-version: 3.11
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        conda env update --file reporting_environment.yaml --name bier_env
+        conda env list
+        conda init bash
+        . ~/.bashrc
+        conda activate trapper_env
+
+    - name: Set pythonpath
+      run: |
+        echo "PYTHONPATH=./bier" >> $GITHUB_ENV
+        
+    - name: Run script
+      shell: bash
+      env:
+        AGO_USER: ${{secrets.AGO_USER}}
+        AGO_PASS: ${{secrets.AGO_PASS}}
+
+      run: |
+        # you may have to activate the environment before running the 
+        # python script, and you likley need to say python3 vs just python
+        conda init bash
+        . ~/.bashrc
+        conda activate bier_env
+        python3 Avalanche-Canada-Forecasts/Avalanche_Canada_Forecasts.py
