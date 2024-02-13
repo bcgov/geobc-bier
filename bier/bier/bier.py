@@ -62,13 +62,21 @@ def Find_Config_File(script_file_path):
 -----------------------------------------------------------------------------
 '''
 class AGO_Connection():
-    def __init__(self, url, username=None, password=None, username_arg_pos=2, password_arg_pos=3):
+    def __init__(self, url=None, username=None, password=None):
         '''Create connection to ArcGIS Online, creates a global variable "gis"'''
         _log.info("Creating connection to ArcGIS Online...")
-        self.url = url
+        self.url = None
         self.username = None
         self.password = None
 
+        if url:
+            self.url = url
+        else:
+            try:
+                self.url = os.environ['AGO_PORTAL_URL']
+            except:
+                self.url = input("Enter AGO Portal URL:")
+        
         if username:
             self.username = username
             self.password = password
@@ -77,12 +85,12 @@ class AGO_Connection():
                 self.username = os.environ['AGO_USER']
                 self.password = os.environ['AGO_PASS']
                 _log.info(self.username)
-                _log.info("Environment AGO credentials found")
+                _log.info("Environment AGO Credentials found")
             except:
                 if os.environ.get('GEOHUB_USERNAME') is not None:
                     self.username = os.getenv('GEOHUB_USERNAME')
                     self.password = os.getenv('GEOHUB_PASSWORD')
-                    _log.info("Environment variable AGO credentials found")
+                    _log.info("Environment variable AGO Credentials found")
                 else:
                     _log.info("*User input required*")
                     self.username = input("Enter AGO username:")
