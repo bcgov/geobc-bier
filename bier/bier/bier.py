@@ -7,7 +7,7 @@ Created: May 29 2023
 Purpose: Common classes + functions used by the Business Innovation and Emergency Response section at GeoBC
 '''
 
-import logging, os, sys, json, getpass, requests
+import logging, os, sys, json, requests
 from arcgis.gis import GIS
 
 # Create logger for messaging to console
@@ -63,8 +63,15 @@ def Find_Config_File(script_file_path):
 '''
 class AGO_Connection():
     def __init__(self, url=None, username=None, password=None):
-        '''Create connection to ArcGIS Online, creates a global variable "gis"'''
-        _log.info("Creating connection to ArcGIS Online...")
+        '''
+        Create a Connection Object for ArcGIS Online
+
+            Parameters:
+                    url (str): Portal URL for ArcGIS Online
+                    username (str): ArcGIS Online Username
+                    password (str): ArcGIS Online Password
+        '''
+        _log.info("Creating Connection to ArcGIS Online...")
         self.url = None
         self.username = None
         self.password = None
@@ -72,10 +79,7 @@ class AGO_Connection():
         if url:
             self.url = url
         else:
-            try:
-                self.url = os.environ['AGO_PORTAL_URL']
-            except:
-                self.url = input("Enter AGO Portal URL:")
+            self.url = os.environ['AGO_PORTAL_URL']
         
         if username:
             self.username = username
@@ -85,43 +89,55 @@ class AGO_Connection():
                 self.username = os.environ['AGO_USER']
                 self.password = os.environ['AGO_PASS']
                 _log.info(self.username)
-                _log.info("Environment AGO Credentials found")
+                _log.info("Environment AGO Credentials Found")
             except:
-                if os.environ.get('GEOHUB_USERNAME') is not None:
-                    self.username = os.getenv('GEOHUB_USERNAME')
-                    self.password = os.getenv('GEOHUB_PASSWORD')
-                    _log.info("Environment variable AGO Credentials found")
-                else:
-                    _log.info("*User input required*")
-                    self.username = input("Enter AGO username:")
-                    self.password = getpass.getpass(prompt='Enter AGO password:')
+                _log.info("Environment AGO Credentials Not Found")
                     
         try:
             self.connection = GIS(self.url, username=self.username, password=self.password, expiration=9999)
             _log.debug(self.connection)
-            _log.info("Connection to ArcGIS Online created successfully")
+            _log.info("Connection to ArcGIS Online Created Successfully")
         except:
             _log.warning(f"Connection to ArcGIS Online Failed")
 
     def reconnect(self):
+        '''
+        Attempt to Reconnect to ArcGIS Online Connection using Existing Parameters
+        '''
         try:
-            _log.info("Reconnected to ArcGIS Online successfully")
+            _log.info("Reconnected to ArcGIS Online Successfully")
             self.connection = GIS(self.url, username=self.username, password=self.password, expiration=9999, verify_cert=False)
         except:
-            _log.warning(f"Attempt to reconnect to ArcGIS Online Failed")
+            _log.warning(f"Attempt to Reconnect to ArcGIS Online Failed")
 
     def disconnect(self):
+        '''
+        Disconnect from ArcGIS Online Connection
+        '''
         self.connection._con.logout()
         _log.info("Disconnected from ArcGIS Online")
 
 class AGO_Item():
     def __init__(self, ago_connection, itemid):
+        '''
+        Create ArcGIS Online Item Object
+
+            Parameters:
+                    ago_connection (object): ArcGIS Online Connection Object from this Module
+                    itemid (str): ArcGIS Online itemId
+        '''
         self.ago_connection = ago_connection
         self.itemid = itemid
         self.item = ago_connection.connection.content.get(self.itemid)
 
     def delete_and_truncate(self, layer_num=0, attempts=5):
-        '''Delete existing features and truncate (which resets ObjectID) a table or hosted feature layer'''
+        '''
+        Delete Existing Features and Truncate (Which Resets ObjectID) Hosted Feature Layer
+
+            Parameters:
+                    layer_num (int): Index Number for Layer from Hosted Feature Layer  
+                    attempts (int): Number of Attempts to Try to Delete and Truncate Features
+        '''
         attempt = 0
         success = False
         # 5 attempts to connect and update the layer 
@@ -146,6 +162,14 @@ class AGO_Item():
                     sys.exit(1)
 
     def append_data(self, new_features_list, layer_num=0, attempts=5):
+        '''
+        Add Features to Hosted Feature Layer
+
+            Parameters:
+                    new_features_list (list): List of New Features (ArcGIS API for Python Objects) to Append
+                    layer_num (int): Index Number for Layer from Hosted Feature Layer  
+                    attempts (int): Number of Attempts to Try to Append New Features
+        '''
         attempt = 0
         success = False
         # 5 attempts to connect and update the layer 
