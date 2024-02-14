@@ -25,7 +25,7 @@ jobs:
     - name: Install dependencies
       shell: bash
       run: |
-        conda env update --file Avalanche-Canada-Forecasts/environment.yaml --name bier_env
+        conda env update --file Avalanche-Canada-Forecasts/requirements.yaml --name bier_env
         conda env list
         conda init bash
         . ~/.bashrc
