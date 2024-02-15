@@ -15,28 +15,23 @@ from dotenv import load_dotenv
 # set script logger
 _log = logging.getLogger(f"{os.path.basename(os.path.splitext(__file__)[0])}")
 
-# import env variables
-script_dir = os.path.dirname(os.path.abspath(__file__))
-environment_file_path = os.path.join(script_dir, 'environment.env')
+def import_environment_variables_from_file():
+    '''
+    Import Environment Variables from File (if necessary)
+    '''
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    environment_file_path = os.path.join(script_dir, 'environment.env')
 
-try:
-    load_dotenv(dotenv_path=environment_file_path)
-    _log.info(f"Environment Variables Imported from File Successfully")
-except:
-    _log.info(f"Environment Variables Imported Not Imported from File")
+    try:
+        load_dotenv(dotenv_path=environment_file_path)
+        _log.info(f"Environment Variables Imported from File Successfully")
+    except:
+        _log.info(f"Environment Variables Imported Not Imported from File")
 
-# import bier module
-try:
-    import bier
-    _log.info(f"bier module imported")
-except:
-    sys.path.append(".")
-    sys.path.append(os.environ["BIER_PATH"])
-    import bier
-    _log.info(f"bier module imported")
-
-def Format_Avalanche_Forecast_Data(avalanche_geometry_data,avalanche_attribute_data):
-    '''Combine Avalanche Canada geometry data and attribute data into a dictionary'''
+def format_avalanche_forecast_data(avalanche_geometry_data, avalanche_attribute_data):
+    '''
+    Combine Avalanche Canada geometry data and attribute data into a dictionary
+    '''
     if avalanche_geometry_data:
         _log.info(f"{len(avalanche_geometry_data['features'])} avalanche forecasts from Avalanche Canada found")
 
@@ -54,7 +49,7 @@ def Format_Avalanche_Forecast_Data(avalanche_geometry_data,avalanche_attribute_d
         _log.warning(f"No Avalanche Canada data found")
         sys.exit(0)
 
-def Update_Avalanche_Forecast_AGO(avalanche_dict,avalanche_item):
+def update_avalanche_forecast(avalanche_dict, avalanche_item):
     '''Clear existing features, and append new features to the Avalanche Forecast hosted feature layer in AGO'''
     # Delete all existing feature layer features and reset OBJECTID/FID counter
     avalanche_item.delete_and_truncate()
@@ -106,6 +101,19 @@ def Update_Avalanche_Forecast_AGO(avalanche_dict,avalanche_item):
         
 def main():
     '''Run code'''
+
+    import_environment_variables_from_file()
+
+    # import bier module
+    try:
+        import bier
+        _log.info(f"bier module imported")
+    except:
+        sys.path.append(".")
+        sys.path.append(os.environ["BIER_PATH"])
+        import bier
+        _log.info(f"bier module imported")
+
     bier.Set_Logging_Level()
 
     AGO_Portal_URL = os.environ["AGO_PORTAL_URL"]
@@ -117,9 +125,9 @@ def main():
     avalanche_attribute_url = r"https://api.avalanche.ca/forecasts/en/products"
     avalanche_attribute_data = bier.Connect_to_Website_or_API_JSON(avalanche_attribute_url,encode=True)
 
-    avalanche_dict = Format_Avalanche_Forecast_Data(avalanche_geometry_data,avalanche_attribute_data)
+    avalanche_dict = format_avalanche_forecast_data(avalanche_geometry_data,avalanche_attribute_data)
     AvalancheForecast_item = bier.AGO_Item(AGO,AvalancheForecast_ItemID)
-    Update_Avalanche_Forecast_AGO(avalanche_dict,AvalancheForecast_item)
+    update_avalanche_forecast(avalanche_dict,AvalancheForecast_item)
 
     AGO.disconnect()
     _log.info("**Script completed**")
