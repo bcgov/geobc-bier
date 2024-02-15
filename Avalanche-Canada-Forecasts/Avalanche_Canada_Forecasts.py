@@ -10,16 +10,28 @@ Purpose: Get avalanche forecast from Avalanche Canada API - https://api.avalanch
 # Import libraries/modules
 import os, sys, datetime, logging
 from arcgis import geometry, features
+from dotenv import load_dotenv
 
 # set script logger
 _log = logging.getLogger(f"{os.path.basename(os.path.splitext(__file__)[0])}")
 
+# import env variables
+script_dir = os.path.dirname(os.path.abspath(__file__))
+environment_file_path = os.path.join(script_dir, 'environment.env')
+
+try:
+    load_dotenv(dotenv_path=environment_file_path)
+    _log.info(f"Environment Variables Imported from File Successfully")
+except:
+    _log.info(f"Environment Variables Imported Not Imported from File")
+
+# import bier module
 try:
     import bier
     _log.info(f"bier module imported")
 except:
     sys.path.append(".")
-    sys.path.append(sys.argv[1])
+    sys.path.append(os.environ["BIER_PATH"])
     import bier
     _log.info(f"bier module imported")
 
@@ -96,14 +108,8 @@ def main():
     '''Run code'''
     bier.Set_Logging_Level()
 
-    try:
-        conf = bier.Find_Config_File(__file__)
-        AGO_Portal_URL = conf['AGO_PORTAL_URL']
-        AVALANCHEFORECAST_ITEMID = conf['AVALANCHEFORECAST_ITEMID']
-    except:
-        AGO_Portal_URL = os.environ['AGO_PORTAL_URL']
-        AVALANCHEFORECAST_ITEMID = os.environ['AVALANCHEFORECAST_ITEMID']
-
+    AGO_Portal_URL = os.environ["AGO_PORTAL_URL"]
+    AvalancheForecast_ItemID = os.environ["AVALANCHEFORECAST_ITEMID"]
     AGO = bier.AGO_Connection(AGO_Portal_URL)
 
     avalanche_geometry_url = r"https://api.avalanche.ca/forecasts/en/areas"
@@ -112,7 +118,7 @@ def main():
     avalanche_attribute_data = bier.Connect_to_Website_or_API_JSON(avalanche_attribute_url,encode=True)
 
     avalanche_dict = Format_Avalanche_Forecast_Data(avalanche_geometry_data,avalanche_attribute_data)
-    AvalancheForecast_item = bier.AGO_Item(AGO,AVALANCHEFORECAST_ITEMID)
+    AvalancheForecast_item = bier.AGO_Item(AGO,AvalancheForecast_ItemID)
     Update_Avalanche_Forecast_AGO(avalanche_dict,AvalancheForecast_item)
 
     AGO.disconnect()
