@@ -1,7 +1,7 @@
-# Avalanche_Canada_Forecasts.py
-Pulling avalanche forecast from [Avalanche Canada](https://docs.avalanche.ca/) for use in ArcGIS Online / BC's GeoHub for emergency management.
+# BCHydro_Outages.py
+Pulling outage data from [BC Hydro](https://www.bchydro.com/power-outages/app/outage-map.html) for use in ArcGIS Online / BC's GeoHub for emergency management.
 
-Data and API belong to Avalanche Canada.
+Data and API belong to BC Hydro.
 
 ## License
     Copyright 2019 BC Provincial Government
