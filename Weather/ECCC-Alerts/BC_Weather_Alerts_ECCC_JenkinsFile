@@ -38,7 +38,7 @@ pipeline {
                     string(credentialsId: 'ARCPRO_PYTHON_PATH', variable: 'PYTHON_PATH'),
                     string(credentialsId: 'GEOPY_ARCPRO_TOOLS_PATH', variable: 'NETWORK_PATH'),
                     usernamePassword(credentialsId: 'EMBC_Support', usernameVariable: 'USER', passwordVariable: 'PASS')])
-                {bat '"%PYTHON_PATH%" https://raw.githubusercontent.com/bcgov/geobc-bier/main/Weather/ECCC-Alerts/BC_Weather_Alerts_ECCC.py "%USER%" "%PASS%"'}
+                {bat '"%PYTHON_PATH%" "%NETWORK_PATH%%SCRIPT_PATH%" "%USER%" "%PASS%"'}
             }
         }
     }
