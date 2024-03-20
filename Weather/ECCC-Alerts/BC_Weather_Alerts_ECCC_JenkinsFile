@@ -1,6 +1,5 @@
 agent_label = "algorab"
 
-
 pipeline {
     agent {
        label "${agent_label}"
@@ -18,7 +17,6 @@ pipeline {
 
     environment {
         SCRIPT_PATH = '/BIER/prod/Weather/BC_Weather_Alerts_ECCC.py'
-        BIER_MODULE = '/BIER/prod'
         MAIL_LIST = 'michael.dykes@gov.bc.ca'
     }
 
@@ -43,15 +41,15 @@ pipeline {
     }
     
     post {
-    failure {
-        mail to: MAIL_LIST, from: 'GeoBCJenkins@GeoBC.com',
-            subject: "Job Failed: ${env.JOB_NAME}", 
-            body: "Job Failed - \"${env.JOB_NAME}\" build: ${env.BUILD_NUMBER}\n\nView the log at:\n ${env.BUILD_URL}"
+        failure {
+            mail to: MAIL_LIST, from: 'GeoBCJenkins@GeoBC.com',
+                subject: "Job Failed: ${env.JOB_NAME}", 
+                body: "Job Failed - \"${env.JOB_NAME}\" build: ${env.BUILD_NUMBER}\n\nView the log at:\n ${env.BUILD_URL}"
+            }
+        aborted {
+            mail to: MAIL_LIST, from: 'GeoBCJenkins@GeoBC.com',
+                subject: "Job Aborted: ${env.JOB_NAME}", 
+                body: "Job Aborted - \"${env.JOB_NAME}\" build: ${env.BUILD_NUMBER}\n\nView the log at:\n ${env.BUILD_URL}"
+            }
         }
-    aborted {
-        mail to: MAIL_LIST, from: 'GeoBCJenkins@GeoBC.com',
-            subject: "Job Aborted: ${env.JOB_NAME}", 
-            body: "Job Aborted - \"${env.JOB_NAME}\" build: ${env.BUILD_NUMBER}\n\nView the log at:\n ${env.BUILD_URL}"
-        }
-    }
 }
