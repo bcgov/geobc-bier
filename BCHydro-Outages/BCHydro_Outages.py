@@ -26,7 +26,7 @@ def import_environment_variables_from_file():
         load_dotenv(dotenv_path=environment_file_path)
         _log.info(f"Environment Variables Imported from File Successfully")
     except:
-        _log.info(f"Environment Variables Imported Not Imported from File")
+        _log.info(f"Environment Variables Not Imported from File")
 
 def Update_BCHydro_Outages_AGO(bchydro_data,bchydro_item):
     '''Clear existing features, and append new features to the BC Hydro Outages hosted feature layer in AGO'''
