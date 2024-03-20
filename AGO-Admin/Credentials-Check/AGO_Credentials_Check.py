@@ -9,21 +9,25 @@ Purpose: Check that AGO credentials are working, if not send message to MS Teams
 
 import os, sys, logging, requests, json
 from arcgis.gis import GIS
+from dotenv import load_dotenv
 
 # set script logger
 _log = logging.getLogger(f"{os.path.basename(os.path.splitext(__file__)[0])}")
 
-try:
-    import bier
-    _log.info(f"bier module imported")
-except:
-    sys.path.append(".")
-    sys.path.append(sys.argv[1])
-    import bier
-    _log.info(f"bier module imported")
+def import_environment_variables_from_file():
+    '''
+    Import Environment Variables from File (if necessary)
+    '''
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    environment_file_path = os.path.join(script_dir, 'environment.env')
 
-def Send_Teams_WebHook_Message():
-    url = os.environ['BIER_TEAMS_WEBHOOK']
+    try:
+        load_dotenv(dotenv_path=environment_file_path)
+        _log.info(f"Environment Variables Imported from File Successfully")
+    except:
+        _log.info(f"Environment Variables Not Imported from File")
+
+def send_msteams_webhook_message(url):
     payload = {"text": f"Warning - Automated attempt to connect to GeoHub from '{os.environ['AGO_USER']}' account failed. Credentials may have been altered."}
     headers = {'Content-Type': 'application/json'}
     response = requests.post(url, headers=headers, data=json.dumps(payload))
@@ -31,18 +35,25 @@ def Send_Teams_WebHook_Message():
 
 def main():
     '''Run code'''
+    # import bier module
+    try:
+        import bier
+        _log.info(f"bier module imported")
+    except:
+        sys.path.append(".")
+        sys.path.append(os.environ["BIER_PATH"])
+        import bier
+        _log.info(f"bier module imported")
+        
     bier.Set_Logging_Level()
 
-    try:
-        conf = bier.Find_Config_File(__file__)
-        AGO_Portal_URL = conf['AGO_PORTAL_URL']
-    except:
-        AGO_Portal_URL = os.environ['AGO_PORTAL_URL']
+    AGO_Portal_URL = os.environ["AGO_PORTAL_URL"]
+    webhook_url = os.environ['BIER_TEAMS_WEBHOOK']
 
     try:
         AGO = bier.AGO_Connection(AGO_Portal_URL)
     except:
-        Send_Teams_WebHook_Message()
+        send_msteams_webhook_message(webhook_url)
 
     AGO.disconnect()
     _log.info("**Script completed**")
