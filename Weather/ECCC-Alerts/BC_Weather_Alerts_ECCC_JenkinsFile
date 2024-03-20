@@ -24,7 +24,7 @@ pipeline {
     }
 
     stages {
-        stage('dependencies') {
+        stage('Install Dependencies') {
             steps {
                 withCredentials([
                     string(credentialsId: 'ARCPRO_PYTHON_PATH', variable: 'PYTHON_PATH')])
@@ -32,7 +32,7 @@ pipeline {
             }
         }
         
-        stage('build') {
+        stage('Run Script') {
             steps {
                 withCredentials([
                     string(credentialsId: 'ARCPRO_PYTHON_PATH', variable: 'PYTHON_PATH'),
