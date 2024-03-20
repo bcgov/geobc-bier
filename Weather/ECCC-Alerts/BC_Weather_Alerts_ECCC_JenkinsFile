@@ -28,7 +28,7 @@ pipeline {
             steps {
                 withCredentials([
                     string(credentialsId: 'ARCPRO_PYTHON_PATH', variable: 'PYTHON_PATH')])
-                {bat '"%PYTHON_PATH%" -m pip install -r git+https://github.com/bcgov/geobc-bier/main/Weather/ECCC-Alerts/requirements.txt'}
+                {bat '"%PYTHON_PATH%" -m pip install -r git+https://raw.githubusercontent.com/bcgov/geobc-bier/main/Weather/ECCC-Alerts/requirements.txt'}
             }
         }
         
