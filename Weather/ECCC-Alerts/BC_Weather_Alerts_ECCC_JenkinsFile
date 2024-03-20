@@ -27,7 +27,7 @@ pipeline {
         stage('dependencies') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'GEOPY_PYTHON_PATH', variable: 'PYTHON_PATH')])
+                    string(credentialsId: 'ARCPRO_PYTHON_PATH', variable: 'PYTHON_PATH')])
                 {bat '"%PYTHON_PATH%" -m pip install -r git+https://github.com/bcgov/geobc-bier/main/Weather/ECCC-Alerts/requirements.txt'}
             }
         }
