@@ -18,7 +18,6 @@ pipeline {
 
     environment {
         SCRIPT_PATH = '/BIER/prod/Weather/BC_Weather_Alerts_ECCC.py'
-        REQUIREMENTS = '/BIER/prod/Weather/requirements.txt'
         BIER_MODULE = '/BIER/prod'
         MAIL_LIST = 'michael.dykes@gov.bc.ca'
     }
