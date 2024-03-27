@@ -23,15 +23,13 @@ jobs:
         python-version: 3.11
 
     - name: Install dependencies
-      with:
-        retries: 5
-        shell: bash
-        run: |
-          conda env update --file Avalanche-Canada-Forecasts/requirements.yaml --name bier_env
-          conda env list
-          conda init bash
-          . ~/.bashrc
-          conda activate bier_env
+      shell: bash
+      run: |
+        conda env update --file Avalanche-Canada-Forecasts/requirements.yaml --name bier_env
+        conda env list
+        conda init bash
+        . ~/.bashrc
+        conda activate bier_env
         
     - name: Run script
       shell: bash
