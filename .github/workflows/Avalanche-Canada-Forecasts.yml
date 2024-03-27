@@ -24,15 +24,12 @@ jobs:
 
     - name: Install dependencies
       shell: bash
-      with:
-	max_attempts: 3
-	retry_on: error
-        run: |
-          conda env update --file Avalanche-Canada-Forecasts/requirements.yaml --name bier_env
-          conda env list
-          conda init bash
-          . ~/.bashrc
-          conda activate bier_env
+      run: |
+        conda env update --file Avalanche-Canada-Forecasts/requirements.yaml --name bier_env
+        conda env list
+        conda init bash
+        . ~/.bashrc
+        conda activate bier_env
         
     - name: Run script
       shell: bash
