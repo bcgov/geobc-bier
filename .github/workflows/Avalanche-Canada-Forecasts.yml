@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - uses: actions/setup-python@v4
       with:
         python-version: '3.11'
     
     - name: Set up Conda environment
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@v4
       with:
         activate-environment: bier_env
         python-version: 3.11
