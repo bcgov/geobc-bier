@@ -17,7 +17,7 @@ jobs:
         python-version: '3.11'
     
     - name: Set up Conda environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         activate-environment: bier_env
         python-version: 3.11
