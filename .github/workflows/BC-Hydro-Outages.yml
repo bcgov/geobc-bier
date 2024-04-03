@@ -23,13 +23,17 @@ jobs:
         python-version: 3.11
 
     - name: Install dependencies
-      shell: bash
-      run: |
-        conda env update --file BCHydro-Outages/requirements.yaml --name bier_env
-        conda env list
-        conda init bash
-        . ~/.bashrc
-        conda activate bier_env
+      uses: nick-fields/retry@v3
+      with:
+        timeout_minutes: 10
+        max_attempts: 3
+        shell: bash
+        command: |
+          conda env update --file BCHydro-Outages/requirements.yaml --name bier_env
+          conda env list
+          conda init bash
+          . ~/.bashrc
+          conda activate bier_env
         
     - name: Run script
       shell: bash
