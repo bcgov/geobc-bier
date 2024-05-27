@@ -1,0 +1,55 @@
+name: BC Hydro Outages
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  retrieve_images:
+    defaults:
+      run:
+        shell: bash
+    name: 'Run BC Hydro Outages'
+    runs-on: ubuntu-22.04
+    environment: PROD
+    env:
+      AGO_PORTAL_URL: ${{secrets.AGO_PORTAL_URL}}
+      AGO_USER: ${{secrets.AGO_USER}}
+      AGO_PASS: ${{secrets.AGO_PASS}}
+      HYDROOUTAGES_ITEMID: ${{secrets.HYDROOUTAGES_ITEMID}}
+      HYDROOUTAGES_LFN_ITEMID: ${{secrets.HYDROOUTAGES_LFN_ITEMID}}
+
+    steps:
+    - uses: actions/checkout@v3
+      id: checkout
+      with:
+       fetch-depth: 0
+
+    - name: Install micromamba (conda) environment
+      uses: mamba-org/provision-with-micromamba@main
+      with:
+        cache-env: false
+        environment-name: bier_env
+
+    - name: Install Dependencies (pip)
+      id: install_deps_pip
+      shell: bash
+      run: |
+        eval "$(micromamba shell hook --shell=bash)"
+        # micromamba shell init --shell=bash --prefix=~/micromamba
+        micromamba activate bier_env
+        micromamba env list
+        micromamba env update --file BCHydro-Outages/requirements.yaml --name bier_env
+        micromamba init bash
+        . ~/.bashrc
+
+    - name: Run Daily Pipeline
+      id: daily_pipeline
+      shell: bash
+      run: |
+        # setup / invoke conda env
+        eval "$(micromamba shell hook --shell=bash)"
+        micromamba activate bier_env
+
+        python BCHydro-Outages/BCHydro_Outages.py
