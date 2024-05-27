@@ -39,7 +39,7 @@ jobs:
         # micromamba shell init --shell=bash --prefix=~/micromamba
         micromamba activate bier_env
         micromamba env list
-        micromamba env install --file BCHydro-Outages/requirements.yaml --name bier_env
+        micromamba env install BCHydro-Outages/requirements.yaml bier_env
         micromamba init bash
         . ~/.bashrc
 
