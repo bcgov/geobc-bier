@@ -75,6 +75,7 @@ class AGO_Connection():
         self.url = None
         self.username = None
         self.password = None
+        self.connection = None
 
         if url:
             self.url = url
