@@ -115,8 +115,11 @@ class AGO_Connection():
         '''
         Disconnect from ArcGIS Online Connection
         '''
-        self.connection._con.logout()
-        _log.info("Disconnected from ArcGIS Online")
+        try:
+            self.connection._con.logout()
+            _log.info("Disconnected from ArcGIS Online")
+        except:
+            _log.info("Disconnected from ArcGIS Online Failed")
 
 class AGO_Item():
     def __init__(self, ago_connection, itemid):
