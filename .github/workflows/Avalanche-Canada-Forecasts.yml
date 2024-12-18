@@ -30,4 +30,5 @@ jobs:
         AGO_PASS: ${{secrets.AGO_PASS}}
         AVALANCHEFORECAST_ITEMID: ${{secrets.AVALANCHEFORECAST_ITEMID}}
       run: |
+        conda activate bier_env
         conda run -n bier_env python Avalanche-Canada-Forecasts/Avalanche_Canada_Forecasts.py
