@@ -10,28 +10,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v2
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.9'
     
     - name: Set up Conda environment
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@v2
       with:
         activate-environment: bier_env
-        python-version: 3.11
+        python-version: 3.9
 
     - name: Install dependencies
-      uses: nick-fields/retry@v3
-      with:
-        timeout_minutes: 10
-        max_attempts: 3
-        shell: bash
-        command: |
-          conda env update --file Avalanche-Canada-Forecasts/requirements.yaml --name bier_env
-          conda list -n bier_env
-        
+      shell: bash
+      run: |
+        conda env update --file Avalanche-Canada-Forecasts/requirements.yaml --name bier_env
+        conda env list
+        conda init bash
+        . ~/.bashrc
+        conda activate bier_env
+
     - name: Run script
       shell: bash
       env:
