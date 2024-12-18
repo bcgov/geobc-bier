@@ -20,7 +20,7 @@ jobs:
     - name: Create conda environment
       run: |
         conda env create -f Avalanche-Canada-Forecasts/requirements.yaml
-        conda init
+        conda init bash
         conda activate bier_env
 
     - name: Run script
