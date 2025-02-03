@@ -1,4 +1,4 @@
 arcgis==2.4.0
-python-dotenv==1.0.1
-tenacity==9.0.0
--e git+https://github.com/bcgov/geobc-bier.git@v1.0.1#egg=bier&subdirectory=bier
+python-dotenv
+tenacity
+-e git+https://github.com/bcgov/geobc-bier.git#egg=bier&subdirectory=bier
