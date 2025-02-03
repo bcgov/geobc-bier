@@ -1,0 +1,55 @@
+agent_label = "algorab"
+
+pipeline {
+    agent {
+       label "${agent_label}"
+    }
+    
+    triggers {
+        cron('H/15 * * * *')
+    }
+    
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '7'))
+        disableConcurrentBuilds()
+        timeout(time: 1, unit: 'HOURS')
+    }
+
+    environment {
+        SCRIPT_PATH = '/BIER/prod/Weather/BC_Weather_Alerts_ECCC.py'
+        MAIL_LIST = 'michael.dykes@gov.bc.ca'
+    }
+
+    stages {
+        stage('Install Dependencies') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'ARCPRO_PYTHON_PATH', variable: 'PYTHON_PATH')])
+                {bat '"%PYTHON_PATH%" -m pip install -r https://raw.githubusercontent.com/bcgov/geobc-bier/main/Weather/ECCC-Alerts/requirements.txt'}
+            }
+        }
+        
+        stage('Run Script') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'ARCPRO_PYTHON_PATH', variable: 'PYTHON_PATH'),
+                    string(credentialsId: 'GEOPY_ARCPRO_TOOLS_PATH', variable: 'NETWORK_PATH'),
+                    usernamePassword(credentialsId: 'EMBC_Support', usernameVariable: 'USER', passwordVariable: 'PASS')])
+                {bat '"%PYTHON_PATH%" "%NETWORK_PATH%%SCRIPT_PATH%" "%USER%" "%PASS%"'}
+            }
+        }
+    }
+    
+    post {
+        failure {
+            mail to: MAIL_LIST, from: 'GeoBCJenkins@GeoBC.com',
+                subject: "Job Failed: ${env.JOB_NAME}", 
+                body: "Job Failed - \"${env.JOB_NAME}\" build: ${env.BUILD_NUMBER}\n\nView the log at:\n ${env.BUILD_URL}"
+            }
+        aborted {
+            mail to: MAIL_LIST, from: 'GeoBCJenkins@GeoBC.com',
+                subject: "Job Aborted: ${env.JOB_NAME}", 
+                body: "Job Aborted - \"${env.JOB_NAME}\" build: ${env.BUILD_NUMBER}\n\nView the log at:\n ${env.BUILD_URL}"
+            }
+        }
+}

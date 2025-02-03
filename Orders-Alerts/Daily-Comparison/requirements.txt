@@ -1,0 +1,2 @@
+arcgis
+minio
