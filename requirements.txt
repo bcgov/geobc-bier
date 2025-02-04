@@ -1,4 +1,5 @@
 arcgis==2.4.0
 python-dotenv
+minio
 tenacity
 -e git+https://github.com/bcgov/geobc-bier.git#egg=bier&subdirectory=bier
