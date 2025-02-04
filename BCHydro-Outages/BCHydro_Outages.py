@@ -12,6 +12,7 @@ import os
 import sys
 import datetime
 import logging
+import bier
 from arcgis import geometry, features
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -141,21 +142,6 @@ def main():
     Run the script
     """
     import_environment_variables_from_file()
-
-    try:
-        import bier
-
-        _log.info("bier module imported successfully")
-    except Exception as e:
-        sys.path.append(".")
-        sys.path.append(os.getenv("BIER_PATH", ""))
-        try:
-            import bier
-
-            _log.info("bier module imported successfully after modifying sys.path")
-        except ImportError:
-            _log.critical(f"Failed to import bier module: {e}")
-            sys.exit(1)
 
     try:
         AGO_Portal_URL = os.getenv("AGO_PORTAL_URL")
