@@ -1,6 +1,8 @@
 name: BC Hydro Outages
 
 on:
+  schedule:
+    - cron: '*/15 * * * *'
   workflow_dispatch:
   
 jobs:
