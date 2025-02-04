@@ -26,7 +26,7 @@ jobs:
       - name: Use Python Environment
         run: |
           source venv/bin/activate
-          python BCHydro-Outages/BCHydro_Outages.py  # Run your script
+          python bchydro-outages/bchydro_outages.py  # Run your script
         env:
           AGO_PORTAL_URL: ${{secrets.AGO_PORTAL_URL}}
           AGO_USER: ${{secrets.AGO_USER}}
