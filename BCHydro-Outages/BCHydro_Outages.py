@@ -157,8 +157,6 @@ def main():
             _log.critical(f"Failed to import bier module: {e}")
             sys.exit(1)
 
-    bier.set_logging_level(logging.DEBUG)
-
     try:
         AGO_Portal_URL = os.getenv("AGO_PORTAL_URL")
         HydroOutages_ItemID = os.getenv("HYDROOUTAGES_ITEMID")
