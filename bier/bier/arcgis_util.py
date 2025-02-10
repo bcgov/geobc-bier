@@ -1,21 +1,21 @@
 """
-bier function library (bier.py)
+bier arcgis function library (bier.py)
 Author: Michael Dykes (michael.dykes@gov.bc.ca)
-Created: May 29, 2023
+Created: February 10, 2025
 
 Description:
         Contains common classes and functions used by the Business Innovation and Emergency Response section at GeoBC
-        for GIS data processing and interaction with ArcGIS Online (AGO) and other GIS tools.
+        for GIS data processing and interaction with ArcGIS Online (AGO).
 
 Dependencies:
     - arcgis
-    - minio
     - tenacity
 """
 
 import logging
 import os
-from arcgis.gis import GIS
+from arcgis.gis import GIS, Item
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
 # Set script logger
 logging.basicConfig(
@@ -25,18 +25,17 @@ logging.basicConfig(
 _log = logging.getLogger(os.path.basename(os.path.splitext(__file__)[0]))
 
 # ArcGIS Online Connection Class
-class AGOConnection:
+class AGO:
     """
     Handles authentication and connection to ArcGIS Online.
 
     Attributes:
         url (str): The ArcGIS Online portal URL.
         username (str): The ArcGIS Online username.
-        password (str): The ArcGIS Online password.
-        connection (GIS or None): The active GIS connection object.
+        connection (GIS): The active GIS connection object.
     """
 
-    def __init__(self, url=None, username=None, password=None):
+    def __init__(self, url: str, username: str, password: str) -> None:
         """
         Initializes an ArcGIS Online connection.
 
@@ -49,38 +48,36 @@ class AGOConnection:
                                       it is read from `AGO_PASS`.
         """
         _log.info("Creating connection to ArcGIS Online...")
-        self.url = url or os.getenv("AGO_PORTAL_URL")
-        self.username = username or os.getenv("AGO_USER")
-        self.password = password or os.getenv("AGO_PASS")
-        self.connection = None
+        self.url: str = url or os.getenv("AGO_PORTAL_URL")
+        self.username: str = username or os.getenv("AGO_USER")
+        self.password: str = password or os.environ.get("AGO_PASS")
+        self.connection: GIS = self._connect(self.password)
 
-        if not all([self.url, self.username, self.password]):
-            _log.warning("Missing AGO credentials")
-            return
-
-        self._connect()
-
-    def _connect(self):
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_fixed(2),
+        retry=retry_if_exception_type(Exception),
+        reraise=True
+    )
+    def _connect(self, password: str) -> GIS:
         """Attempts to establish a connection to ArcGIS Online."""
         try:
-            self.connection = GIS(
-                self.url, self.username, self.password, expiration=9999
-            )
+            connection: GIS = GIS(self.url, self.username, password, expiration=9999)
             _log.info("Connected to ArcGIS Online successfully")
+            return connection
         except Exception as e:
-            _log.warning(f"Failed to connect to ArcGIS Online: {e}")
+            _log.error(f"Failed to connect to ArcGIS Online: {e}")
+            raise
 
-    def reconnect(self):
+    def reconnect(self) -> None:
         """Re-establishes the ArcGIS Online connection."""
         try:
-            self.connection = GIS(
-                self.url, self.username, self.password, expiration=9999
-            )
+            self.connection: GIS = self._connect(self.password)
             _log.info("Reconnected to ArcGIS Online successfully")
         except Exception as e:
             _log.warning(f"Reconnection to ArcGIS Online failed: {e}")
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         """Logs out and disconnects from ArcGIS Online."""
         if self.connection:
             try:
@@ -96,48 +93,39 @@ class AGOItem:
     Represents an item in ArcGIS Online.
 
     Attributes:
-        ago_connection (object): The ArcGIS Online connection instance.
         itemid (str): The unique identifier of the ArcGIS Online item.
-        item (object): The ArcGIS Online item object.
+        item (Item): The ArcGIS Online item object.
     """
 
-    def __init__(self, ago_connection, itemid):
+    def __init__(self, ago_connection: AGO, itemid: str) -> None:
         """
         Initializes an ArcGIS Online item.
 
         Args:
-            ago_connection (object): An established ArcGIS Online connection.
+            ago_connection (AGO): An established ArcGIS Online connection.
             itemid (str): The ID of the ArcGIS Online item.
         """
-        self.ago_connection = ago_connection
-        self.itemid = itemid
-        self.item = ago_connection.connection.content.get(itemid)
+        self.itemid: str = itemid
+        self.item: Item = ago_connection.connection.content.get(itemid)
 
-    def delete_and_truncate(self, layer_num=0, attempts=5):
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_fixed(2),
+        retry=retry_if_exception_type(Exception),
+        reraise=True
+    )
+    def delete_and_truncate(self, layer_num: int = 0) -> None:
         """
         Deletes all features from a layer and truncates the data.
-
-        Args:
-            layer_num (int, optional): The layer index. Defaults to 0.
-            attempts (int, optional): Number of attempts before failure. Defaults to 5.
-
-        Raises:
-            RuntimeError: If all attempts fail.
         """
-        for attempt in range(attempts):
-            try:
-                feature_layer = self.item.layers[layer_num]
-                feature_count = feature_layer.query(return_count_only=True)
-                feature_layer.delete_features(where="objectid >= 0")
-                _log.info(
-                    f"Deleted {feature_count} features from ItemID: {self.itemid}"
-                )
-                feature_layer.manager.truncate()
-                _log.info("Data truncated successfully")
-                return
-            except Exception as e:
-                _log.warning(f"Attempt {attempt + 1} failed: {e}")
-                self.ago_connection.reconnect()
-        raise RuntimeError(
-            f"All {attempts} attempts failed. AGO update unsuccessful."
-        )
+        try:
+            feature_layer = self.item.layers[layer_num]
+            feature_count = feature_layer.query(return_count_only=True)
+            feature_layer.delete_features(where="objectid >= 0")
+            _log.info(f"Deleted {feature_count} features from ItemID: {self.itemid}")
+            feature_layer.manager.truncate()
+            _log.info("Data truncated successfully")
+        except Exception as e:
+            _log.warning(f"Delete and truncate attempt failed: {e}")
+            self.ago_connection.reconnect()
+            raise
