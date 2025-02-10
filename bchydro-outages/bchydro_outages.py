@@ -47,8 +47,6 @@ def fetch_bchydro_data(api_url):
         stop=stop_after_attempt(3), wait=wait_fixed(5)
     )  # Retry up to 3 times with 5-second wait between
     def get_data():
-        import bier  # Ensure bier is imported before using
-
         try:
             response = bier.connect_to_api_json(api_url)
             if response is None:
@@ -156,7 +154,7 @@ def main():
             _log.critical("Missing required environment variables for AGO. Exiting.")
             sys.exit(1)
 
-        AGO = bier.AGOConnection(AGO_Portal_URL)
+        AGO = bier.AGO(AGO_Portal_URL)
         bchydro_data = fetch_bchydro_data(BCHYDRO_API_URL)
 
         if bchydro_data:
