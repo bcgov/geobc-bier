@@ -154,7 +154,7 @@ def main():
             _log.critical("Missing required environment variables for AGO. Exiting.")
             sys.exit(1)
 
-        AGO = bier.AGO(AGO_Portal_URL)
+        AGO = bier.AGO(AGO_Portal_URL,os.getenv("AGO_USER"),os.getenv("AGO_PASS"))
         bchydro_data = fetch_bchydro_data(BCHYDRO_API_URL)
 
         if bchydro_data:
