@@ -129,3 +129,34 @@ class AGOItem:
             _log.warning(f"Delete and truncate attempt failed: {e}")
             self.ago_connection.reconnect()
             raise
+
+    def append_data(self, new_features_list, layer_num=0, attempts=5):
+        '''
+        Add Features to Hosted Feature Layer
+
+            Parameters:
+                    new_features_list (list): List of New Features (ArcGIS API for Python Objects) to Append
+                    layer_num (int): Index Number for Layer from Hosted Feature Layer  
+                    attempts (int): Number of Attempts to Try to Append New Features
+        '''
+        attempt = 0
+        success = False
+        # 5 attempts to connect and update the layer 
+        while attempt < attempts and not success:
+            try:
+                # Attempt to update ago feature layer
+                result = self.item.layers[layer_num].edit_features(adds = new_features_list)
+                _log.debug(result)
+                success = True
+                _log.info(f"Finished creating {len(new_features_list)} new features in AGO - ItemID: {self.itemid}")
+            except:
+                # If attempt fails, retry attempt (up to 5 times then exit script if unsuccessful)
+                _log.warning(f"Re-Attempting AGO Update. Attempt Number {attempt}")
+                attempt += 1
+                self.ago_connection.reconnect()
+                if attempt == 5:
+                    _log.critical(f"***No More Attempts Left. AGO Update Failed***")
+                    sys.exit(1)
+
+    def add_field(self, new_field, layer_num=0):
+        self.item.layers[layer_num].manager.add_to_definition({'fields':new_field})
