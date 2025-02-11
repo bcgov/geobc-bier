@@ -48,7 +48,7 @@ def fetch_bchydro_data(api_url):
     )  # Retry up to 3 times with 5-second wait between
     def get_data():
         try:
-            response = bier.connect_to_api_json(api_url)
+            response = bier.connect_to_api(api_url)
             if response is None:
                 _log.error("BC Hydro API returned None. Check API status.")
                 return []
