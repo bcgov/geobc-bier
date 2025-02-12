@@ -1,137 +1,166 @@
-'''
+"""
 Avalanche Canada Forecasts
 
 Written by: Michael Dykes (michael.dykes@gov.bc.ca)
 Created: January 24 2023
 
 Purpose: Get avalanche forecast from Avalanche Canada API - https://api.avalanche.ca/ - for display in EM GeoHub
-'''
+"""
 
-# Import libraries/modules
-import os, sys, datetime, logging
+"""
+Avalanche Canada Forecasts (avalanche_canada_forecasts.py)
+Author: Michael Dykes (michael.dykes@gov.bc.ca)
+Created: January 24 2023
+
+Description:
+        Get avalanche forecast from Avalanche Canada API - https://api.avalanche.ca/ - for display in EM GeoHub
+
+Dependencies:
+    - arcgis
+    - bier
+"""
+
+import os
+import sys
+import datetime
+import logging
+from typing import Dict, Any, Optional
+
+import bier  # Ensure this module is installed and properly configured
 from arcgis import geometry, features
-from dotenv import load_dotenv
 
-# set script logger
-_log = logging.getLogger(f"{os.path.basename(os.path.splitext(__file__)[0])}")
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+_log = logging.getLogger(os.path.basename(os.path.splitext(__file__)[0]))
 
-def import_environment_variables_from_file():
-    '''
-    Import Environment Variables from File (if necessary)
-    '''
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    environment_file_path = os.path.join(script_dir, 'environment.env')
 
+def format_avalanche_forecast_data(
+    avalanche_geometry_data: Optional[Dict[str, Any]],
+    avalanche_attribute_data: Optional[Any],
+) -> Dict[str, Dict[str, Any]]:
+    """Combine Avalanche Canada geometry and attribute data into a dictionary."""
+    if not avalanche_geometry_data or "features" not in avalanche_geometry_data:
+        _log.warning("No Avalanche Canada geometry data found.")
+        sys.exit(1)
+
+    _log.info(f"{len(avalanche_geometry_data['features'])} avalanche forecasts found.")
+    avalanche_dict = {}
+
+    for row in avalanche_geometry_data["features"]:
+        avalanche_dict[row["id"]] = {"geometry": row["geometry"]}
+
+    if avalanche_attribute_data:
+        for row in avalanche_attribute_data:
+            area_id = row.get("area", {}).get("id")
+            if area_id in avalanche_dict:
+                avalanche_dict[area_id]["attributes"] = row.get("report", {})
+
+    return avalanche_dict
+
+
+def parse_iso_datetime(date_str: Optional[str]) -> Optional[datetime.datetime]:
+    """Parse an ISO date string to a datetime object, handling various formats."""
+    if not date_str:
+        return None
     try:
-        load_dotenv(dotenv_path=environment_file_path)
-        _log.info(f"Environment Variables Imported from File Successfully")
-    except:
-        _log.info(f"Environment Variables Imported Not Imported from File")
+        if "00:00Z" in date_str:
+            return (
+                datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ")
+                .replace(tzinfo=datetime.timezone.utc)
+                .astimezone()
+            )
+        return (
+            datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+            .replace(tzinfo=datetime.timezone.utc)
+            .astimezone()
+        )
+    except ValueError as e:
+        _log.exception(f"Error parsing datetime string: {date_str}")
+        return None
 
-def format_avalanche_forecast_data(avalanche_geometry_data, avalanche_attribute_data):
-    '''
-    Combine Avalanche Canada geometry data and attribute data into a dictionary
-    '''
-    if avalanche_geometry_data:
-        _log.info(f"{len(avalanche_geometry_data['features'])} avalanche forecasts from Avalanche Canada found")
 
-        avalanche_dict = {}
-        if avalanche_geometry_data:
-            for row in avalanche_geometry_data["features"]:
-                avalanche_dict[row['id']] = {"geometry":row['geometry']}
+def update_avalanche_forecast(
+    avalanche_dict: Dict[str, Dict[str, Any]], avalanche_item: Any
+) -> None:
+    """Clear existing features and append new features to the Avalanche Forecast hosted feature layer."""
+    if not avalanche_dict:
+        _log.info("No Avalanche Forecasts found.")
+        return
 
-        if avalanche_attribute_data:
-            for row in avalanche_attribute_data:
-                avalanche_dict[row['area']['id']]["attributes"] = row['report']
-
-        return avalanche_dict
-    else:
-        _log.warning(f"No Avalanche Canada data found")
-        sys.exit(0)
-
-def update_avalanche_forecast(avalanche_dict, avalanche_item):
-    '''Clear existing features, and append new features to the Avalanche Forecast hosted feature layer in AGO'''
-    # Delete all existing feature layer features and reset OBJECTID/FID counter
+    # Delete all existing features and reset OBJECTID/FID counter
     avalanche_item.delete_and_truncate()
-
     new_features = []
-    if avalanche_dict:
-        for k,v in avalanche_dict.items():
-            # Create arcgis geometry object from GEOJSON
-            geom = geometry.Geometry(v['geometry'])
 
-            # Align attributes from AGO fields names to attributes from the GEOJSON
-            dateIssued = None
-            if v['attributes']['dateIssued']:
-                if "00:00Z" in v['attributes']['dateIssued']:
-                    dateIssued = datetime.datetime.strptime(v['attributes']['dateIssued'],"%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).astimezone(tz=None)
-                else:
-                    dateIssued = datetime.datetime.strptime(v['attributes']['dateIssued'],"%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=datetime.timezone.utc).astimezone(tz=None)
+    for area_id, data in avalanche_dict.items():
+        geom = geometry.Geometry(data["geometry"])
+        attributes = {
+            "id": area_id,
+            "date_issued": parse_iso_datetime(data["attributes"].get("dateIssued")),
+            "valid_until": parse_iso_datetime(data["attributes"].get("validUntil")),
+        }
 
-            validUntil = None
-            if v['attributes']['validUntil']:
-                if "00:00Z" in v['attributes']['validUntil']:
-                    validUntil = datetime.datetime.strptime(v['attributes']['validUntil'],"%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).astimezone(tz=None)
-                else:
-                    validUntil = datetime.datetime.strptime(v['attributes']['validUntil'],"%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=datetime.timezone.utc).astimezone(tz=None)
+        for i in range(3):
+            try:
+                ratings = data["attributes"]["dangerRatings"][i]
+                attributes.update(
+                    {
+                        f"danger_rating_{i + 1}": ratings["date"]["display"],
+                        f"danger_rating_{i + 1}_alp": ratings["ratings"]["alp"][
+                            "rating"
+                        ]["display"],
+                        f"danger_rating_{i + 1}_tln": ratings["ratings"]["tln"][
+                            "rating"
+                        ]["display"],
+                        f"danger_rating_{i + 1}_btl": ratings["ratings"]["btl"][
+                            "rating"
+                        ]["display"],
+                    }
+                )
+            except (IndexError, KeyError, TypeError):
+                _log.warning(
+                    f"Missing danger rating data for area ID {area_id} on day {i + 1}."
+                )
 
-            attributes = {"id": k,
-                    "date_issued": dateIssued,
-                    "valid_until": validUntil,
-                    "danger_rating_1": v['attributes']['dangerRatings'][0]['date']['display'],
-                    "danger_rating_1_alp": v['attributes']['dangerRatings'][0]['ratings']['alp']['rating']['display'],
-                    "danger_rating_1_tln": v['attributes']['dangerRatings'][0]['ratings']['tln']['rating']['display'],
-                    "danger_rating_1_btl": v['attributes']['dangerRatings'][0]['ratings']['btl']['rating']['display'],
-                    "danger_rating_2": v['attributes']['dangerRatings'][1]['date']['display'],
-                    "danger_rating_2_alp": v['attributes']['dangerRatings'][1]['ratings']['alp']['rating']['display'],
-                    "danger_rating_2_tln": v['attributes']['dangerRatings'][1]['ratings']['tln']['rating']['display'],
-                    "danger_rating_2_btl": v['attributes']['dangerRatings'][1]['ratings']['btl']['rating']['display'],
-                    "danger_rating_3": v['attributes']['dangerRatings'][2]['date']['display'],
-                    "danger_rating_3_alp": v['attributes']['dangerRatings'][2]['ratings']['alp']['rating']['display'],
-                    "danger_rating_3_tln": v['attributes']['dangerRatings'][2]['ratings']['tln']['rating']['display'],
-                    "danger_rating_3_btl": v['attributes']['dangerRatings'][2]['ratings']['btl']['rating']['display']}
+        new_features.append(features.Feature(geom, attributes))
 
-            # Create new feature
-            newfeature = features.Feature(geom,attributes)
-            new_features.append(newfeature)
+    avalanche_item.append_data(new_features)
 
-        avalanche_item.append_data(new_features)
-    else:
-        _log.info("No Avalanche Forecasts found")
-        
+
 def main():
-    '''Run code'''
+    """Main script execution."""
 
-    import_environment_variables_from_file()
+    AGO_URL = os.getenv("AGO_PORTAL_URL")
+    AGO_USER = os.getenv("AGO_USER")
+    AGO_PASS = os.getenv("AGO_PASS")
 
-    # import bier module
+    if not all([AGO_URL, AGO_USER, AGO_PASS]):
+        _log.error("AGO credentials are missing. Check your environment variables.")
+        sys.exit(1)
+
+    AGO = bier.AGO(AGO_URL, AGO_USER, AGO_PASS)
+    AvalancheForecast_ItemID = os.getenv("AVALANCHEFORECAST_ITEMID")
+
     try:
-        import bier
-        _log.info(f"bier module imported")
-    except:
-        sys.path.append(".")
-        sys.path.append(os.environ["BIER_PATH"])
-        import bier
-        _log.info(f"bier module imported")
+        avalanche_geometry_data = bier.connect_to_api(
+            "https://api.avalanche.ca/forecasts/en/areas"
+        )
+        avalanche_attribute_data = bier.connect_to_api(
+            "https://api.avalanche.ca/forecasts/en/products", encode=True
+        )
 
-    bier.Set_Logging_Level()
+        avalanche_dict = format_avalanche_forecast_data(
+            avalanche_geometry_data, avalanche_attribute_data
+        )
+        AvalancheForecast_item = bier.AGOItem(AGO, AvalancheForecast_ItemID)
+        update_avalanche_forecast(avalanche_dict, AvalancheForecast_item)
+    except Exception as e:
+        _log.exception("An error occurred during execution.")
+    finally:
+        AGO.disconnect()
+        _log.info("** Script completed **")
 
-    AGO_Portal_URL = os.environ["AGO_PORTAL_URL"]
-    AvalancheForecast_ItemID = os.environ["AVALANCHEFORECAST_ITEMID"]
-    AGO = bier.AGO_Connection(AGO_Portal_URL)
 
-    avalanche_geometry_url = r"https://api.avalanche.ca/forecasts/en/areas"
-    avalanche_geometry_data = bier.Connect_to_Website_or_API_JSON(avalanche_geometry_url)
-    avalanche_attribute_url = r"https://api.avalanche.ca/forecasts/en/products"
-    avalanche_attribute_data = bier.Connect_to_Website_or_API_JSON(avalanche_attribute_url,encode=True)
-
-    avalanche_dict = format_avalanche_forecast_data(avalanche_geometry_data,avalanche_attribute_data)
-    AvalancheForecast_item = bier.AGO_Item(AGO,AvalancheForecast_ItemID)
-    update_avalanche_forecast(avalanche_dict,AvalancheForecast_item)
-
-    AGO.disconnect()
-    _log.info("**Script completed**")
-
-# main function of script (if script is not imported as a module)
 if __name__ == "__main__":
     main()
