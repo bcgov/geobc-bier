@@ -14,7 +14,8 @@ Dependencies:
 
 import logging
 import os
-from arcgis.gis import GIS, Item
+from arcgis.gis import GIS
+from arcgis.features import FeatureLayer
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
 # Set script logger
@@ -22,7 +23,16 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
-_log = logging.getLogger(os.path.basename(os.path.splitext(__file__)[0]))
+_log = logging.getLogger("bier_arcgis_util")
+
+def retry_on_failure():
+    """Decorator for retrying functions that interact with ArcGIS Online."""
+    return retry(
+        stop=stop_after_attempt(5),
+        wait=wait_fixed(2),
+        retry=retry_if_exception_type(Exception),
+        reraise=True
+    )
 
 # ArcGIS Online Connection Class
 class AGO:
@@ -49,20 +59,15 @@ class AGO:
         """
         _log.info("Creating connection to ArcGIS Online...")
         self.url: str = url or os.getenv("AGO_PORTAL_URL")
-        self.username: str = username or os.getenv("AGO_USER")
-        self.password: str = password or os.environ.get("AGO_PASS")
+        self.username = username or os.getenv("AGO_USER")
+        self._password = password or os.getenv("AGO_PASS")
         self.connection: GIS = self._connect(self.password)
 
-    @retry(
-        stop=stop_after_attempt(5),
-        wait=wait_fixed(2),
-        retry=retry_if_exception_type(Exception),
-        reraise=True
-    )
+    @retry_on_failure()
     def _connect(self, password: str) -> GIS:
         """Attempts to establish a connection to ArcGIS Online."""
         try:
-            connection: GIS = GIS(self.url, self.username, password, expiration=9999)
+            connection = GIS(self.url, self.username, self._password, expiration=9999)
             _log.info("Connected to ArcGIS Online successfully")
             return connection
         except Exception as e:
@@ -71,20 +76,16 @@ class AGO:
 
     def reconnect(self) -> None:
         """Re-establishes the ArcGIS Online connection."""
-        try:
-            self.connection: GIS = self._connect(self.password)
-            _log.info("Reconnected to ArcGIS Online successfully")
-        except Exception as e:
-            _log.warning(f"Reconnection to ArcGIS Online failed: {e}")
+        _log.info("Reconnecting to ArcGIS Online...")
+        self.connection = self._connect()
 
     def disconnect(self) -> None:
         """Logs out and disconnects from ArcGIS Online."""
-        if self.connection:
-            try:
-                self.connection._con.logout()
-                _log.info("Disconnected from ArcGIS Online")
-            except Exception as e:
-                _log.warning(f"Failed to disconnect: {e}")
+        try:
+            self.connection._con.logout()
+            _log.info("Disconnected from ArcGIS Online")
+        except Exception as e:
+            _log.warning(f"Failed to disconnect: {e}")
 
 
 # ArcGIS Online Item Class
@@ -93,6 +94,7 @@ class AGOItem:
     Represents an item in ArcGIS Online.
 
     Attributes:
+        ago_connection (AGO): The ArcGIS Online connection object.
         itemid (str): The unique identifier of the ArcGIS Online item.
         item (Item): The ArcGIS Online item object.
     """
@@ -105,58 +107,59 @@ class AGOItem:
             ago_connection (AGO): An established ArcGIS Online connection.
             itemid (str): The ID of the ArcGIS Online item.
         """
-        self.itemid: str = itemid
-        self.item: Item = ago_connection.connection.content.get(itemid)
+        self.ago_connection = ago_connection
+        self.itemid = itemid
+        self.item = self.ago_connection.connection.content.get(itemid)
+        if not self.item:
+            raise ValueError(f"Item with ID {itemid} not found.")
 
-    @retry(
-        stop=stop_after_attempt(5),
-        wait=wait_fixed(2),
-        retry=retry_if_exception_type(Exception),
-        reraise=True
-    )
-    def delete_and_truncate(self, layer_num: int = 0) -> None:
-        """
-        Deletes all features from a layer and truncates the data.
-        """
+    def get_layer(self, layer_num: int = 0) -> FeatureLayer:
+        """Retrieves a specific layer from the item."""
         try:
-            feature_layer = self.item.layers[layer_num]
+            return self.item.layers[layer_num]
+        except IndexError:
+            raise ValueError(f"Layer {layer_num} does not exist in item {self.itemid}.")
+
+    @retry_on_failure()
+    def delete_and_truncate(self, layer_num: int = 0) -> None:
+        """Deletes all features and truncates a layer."""
+        try:
+            feature_layer = self.get_layer(layer_num)
             feature_count = feature_layer.query(return_count_only=True)
-            feature_layer.delete_features(where="objectid >= 0")
+            feature_layer.delete_features(where="1=1")
             _log.info(f"Deleted {feature_count} features from ItemID: {self.itemid}")
             feature_layer.manager.truncate()
             _log.info("Data truncated successfully")
         except Exception as e:
-            _log.warning(f"Delete and truncate attempt failed: {e}")
+            _log.error(f"Failed to delete and truncate: {e}")
             self.ago_connection.reconnect()
             raise
 
-    def append_data(self, new_features_list, layer_num=0, attempts=5):
-        '''
-        Add Features to Hosted Feature Layer
+    @retry_on_failure()
+    def append_data(self, new_features_list, layer_num: int = 0) -> None:
+        """Adds new features to a hosted feature layer."""
+        if not new_features_list:
+            _log.warning("No features provided for append operation.")
+            return
+        
+        try:
+            feature_layer = self.get_layer(layer_num)
+            result = feature_layer.edit_features(adds=new_features_list)
+            _log.debug(result)
+            _log.info(f"Added {len(new_features_list)} new features to ItemID: {self.itemid}")
+        except Exception as e:
+            _log.error(f"Failed to append data: {e}")
+            self.ago_connection.reconnect()
+            raise
 
-            Parameters:
-                    new_features_list (list): List of New Features (ArcGIS API for Python Objects) to Append
-                    layer_num (int): Index Number for Layer from Hosted Feature Layer  
-                    attempts (int): Number of Attempts to Try to Append New Features
-        '''
-        attempt = 0
-        success = False
-        # 5 attempts to connect and update the layer 
-        while attempt < attempts and not success:
-            try:
-                # Attempt to update ago feature layer
-                result = self.item.layers[layer_num].edit_features(adds = new_features_list)
-                _log.debug(result)
-                success = True
-                _log.info(f"Finished creating {len(new_features_list)} new features in AGO - ItemID: {self.itemid}")
-            except:
-                # If attempt fails, retry attempt (up to 5 times then exit script if unsuccessful)
-                _log.warning(f"Re-Attempting AGO Update. Attempt Number {attempt}")
-                attempt += 1
-                self.ago_connection.reconnect()
-                if attempt == 5:
-                    _log.critical(f"***No More Attempts Left. AGO Update Failed***")
-                    sys.exit(1)
-
-    def add_field(self, new_field, layer_num=0):
-        self.item.layers[layer_num].manager.add_to_definition({'fields':new_field})
+    @retry_on_failure()
+    def add_field(self, new_field, layer_num: int = 0) -> None:
+        """Adds a new field to the feature layer."""
+        try:
+            feature_layer = self.get_layer(layer_num)
+            result = feature_layer.manager.add_to_definition({"fields": new_field})
+            _log.debug(result)
+            _log.info(f"Added new field to ItemID: {self.itemid}")
+        except Exception as e:
+            _log.error(f"Failed to add field: {e}")
+            raise
