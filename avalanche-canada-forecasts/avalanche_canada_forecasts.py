@@ -93,12 +93,32 @@ def update_avalanche_forecast(
     avalanche_item.delete_and_truncate()
     new_features = []
 
-    for area_id, data in avalanche_dict.items():
+    for area_id, data, in avalanche_dict.items():
+        url = data.get("url")
         geom = geometry.Geometry(data["geometry"])
+
+        statements = data["attributes"].get("confidence", {}).get("statements", ["No confidence statement available"])
+
+        # Remove empty strings or whitespace-only entries
+        statements = [s for s in statements if s.strip()]
+
+        # If the list is still empty, use the fallback
+        if not statements:
+            statements = ["No confidence statement available"]
+
+        statement_string = " ".join(statements)
+
+
         attributes = {
             "id": area_id,
             "date_issued": parse_iso_datetime(data["attributes"].get("dateIssued")),
             "valid_until": parse_iso_datetime(data["attributes"].get("validUntil")),
+            "forecaster": data["attributes"].get("forecaster", "Unknown"),  # <-- Accessing nested "forecaster"
+            "title": data["attributes"].get("title","Unnamed"),
+            "confidence": data["attributes"].get("confidence",{}).get("rating",{}).get("display"),
+            "statement" : statement_string,
+            "url": url,
+            
         }
 
         for i in range(3):
@@ -126,7 +146,6 @@ def update_avalanche_forecast(
         new_features.append(features.Feature(geom, attributes))
 
     avalanche_item.append_data(new_features)
-
 
 def main():
     """Main script execution."""
