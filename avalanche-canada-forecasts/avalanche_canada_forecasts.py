@@ -54,8 +54,10 @@ def format_avalanche_forecast_data(
     if avalanche_attribute_data:
         for row in avalanche_attribute_data:
             area_id = row.get("area", {}).get("id")
+            url = row.get("url")
             if area_id in avalanche_dict:
                 avalanche_dict[area_id]["attributes"] = row.get("report", {})
+                avalanche_dict[area_id]["url"] = url
 
     return avalanche_dict
 
