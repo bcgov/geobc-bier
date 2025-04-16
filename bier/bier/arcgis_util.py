@@ -61,7 +61,7 @@ class AGO:
         self.url: str = url or os.getenv("AGO_PORTAL_URL")
         self.username = username or os.getenv("AGO_USER")
         self._password = password or os.getenv("AGO_PASS")
-        self.connection: GIS = self._connect(self.password)
+        self.connection: GIS = self._connect(self._password)
 
     @retry_on_failure()
     def _connect(self, password: str) -> GIS:
