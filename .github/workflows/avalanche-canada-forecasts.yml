@@ -1,7 +1,6 @@
 name: Avalanche Canada Forecasts
 
 on:
-  schedule:
   workflow_dispatch:
   
 jobs:
