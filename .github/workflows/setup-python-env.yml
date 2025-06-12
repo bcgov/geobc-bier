@@ -1,7 +1,7 @@
 name: Setup Python Virtual Environment
 
 on:
-  workflow_call:
+  workflow_call:More actions
 
 jobs:
   setup:
@@ -19,21 +19,22 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y krb5-user libkrb5-dev python3-venv
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-${{ runner.os }}-
+          sudo apt-get install -y krb5-user libkrb5-dev
 
       - name: Create virtual environment
         run: python -m venv venv
 
+      - name: Cache virtual environment
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: venv
+          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
+
       - name: Install dependencies
+
         run: |
           source venv/bin/activate
           pip install --upgrade pip
-          pip install --upgrade -r requirements.txt
