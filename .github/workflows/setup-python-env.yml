@@ -1,7 +1,7 @@
 name: Setup Python Virtual Environment
 
 on:
-  workflow_call:More actions
+  workflow_call:
 
 jobs:
   setup:
@@ -36,5 +36,5 @@ jobs:
       - name: Install dependencies
 
         run: |
-          source venv/bin/activate
+          source venv/bin/activateAdd commentMore actions
           pip install --upgrade pip
