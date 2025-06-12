@@ -12,7 +12,8 @@ import os
 import sys
 import datetime
 import logging
-import bier
+from bier import arcgis_util
+from bier import api_util
 from arcgis import geometry, features
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -48,7 +49,7 @@ def fetch_bchydro_data(api_url):
     )  # Retry up to 3 times with 5-second wait between
     def get_data():
         try:
-            response = bier.connect_to_api(api_url)
+            response = api_util.connect_to_api(api_url)
             if response is None:
                 _log.error("BC Hydro API returned None. Check API status.")
                 return []
@@ -154,14 +155,14 @@ def main():
             _log.critical("Missing required environment variables for AGO. Exiting.")
             sys.exit(1)
 
-        AGO = bier.AGO(AGO_Portal_URL,os.getenv("AGO_USER"),os.getenv("AGO_PASS"))
+        AGO = arcgis_util.AGO(AGO_Portal_URL,os.getenv("AGO_USER"),os.getenv("AGO_PASS"))
         bchydro_data = fetch_bchydro_data(BCHYDRO_API_URL)
 
         if bchydro_data:
-            HydroOutages_item = bier.AGOItem(AGO, HydroOutages_ItemID)
+            HydroOutages_item = arcgis_util.AGOItem(AGO, HydroOutages_ItemID)
             update_bchydro_outages_ago(bchydro_data, HydroOutages_item)
 
-            HydroOutagesLFN_item = bier.AGOItem(AGO, HydroOutagesLFN_ItemID)
+            HydroOutagesLFN_item = arcgis_util.AGOItem(AGO, HydroOutagesLFN_ItemID)
             update_bchydro_outages_ago(bchydro_data, HydroOutagesLFN_item)
 
         AGO.disconnect()
