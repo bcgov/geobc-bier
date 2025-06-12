@@ -19,19 +19,17 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y krb5-user libkrb5-dev
+          sudo apt-get install -y krb5-user libkrb5-dev python3-venv
 
-      - name: Cache virtual environment
-        id: cache
+      - name: Cache pip dependencies
         uses: actions/cache@v4
         with:
-          path: venv
-          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            venv-${{ runner.os }}-
+            pip-${{ runner.os }}-
 
       - name: Create virtual environment
-        if: steps.cache.outputs.cache-hit != 'true'
         run: python -m venv venv
 
       - name: Install dependencies
