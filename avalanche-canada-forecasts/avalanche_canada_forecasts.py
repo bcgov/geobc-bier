@@ -26,7 +26,8 @@ import datetime
 import logging
 from typing import Dict, Any, Optional
 
-import bier  # Ensure this module is installed and properly configured
+from bier import arcgis_util
+from bier import api_util
 from arcgis import geometry, features
 
 # Configure logging
@@ -160,21 +161,21 @@ def main():
         _log.error("AGO credentials are missing. Check your environment variables.")
         sys.exit(1)
 
-    AGO = bier.AGO(AGO_URL, AGO_USER, AGO_PASS)
+    AGO = arcgis_util.AGO(AGO_URL, AGO_USER, AGO_PASS)
     AvalancheForecast_ItemID = os.getenv("AVALANCHEFORECAST_ITEMID")
 
     try:
-        avalanche_geometry_data = bier.connect_to_api(
+        avalanche_geometry_data = api_util.connect_to_api(
             "https://api.avalanche.ca/forecasts/en/areas"
         )
-        avalanche_attribute_data = bier.connect_to_api(
+        avalanche_attribute_data = api_util.connect_to_api(
             "https://api.avalanche.ca/forecasts/en/products", encode=True
         )
 
         avalanche_dict = format_avalanche_forecast_data(
             avalanche_geometry_data, avalanche_attribute_data
         )
-        AvalancheForecast_item = bier.AGOItem(AGO, AvalancheForecast_ItemID)
+        AvalancheForecast_item = arcgis_util.AGOItem(AGO, AvalancheForecast_ItemID)
         update_avalanche_forecast(avalanche_dict, AvalancheForecast_item)
     except Exception as e:
         _log.exception("An error occurred during execution.")
