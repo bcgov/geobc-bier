@@ -1,12 +1,14 @@
+name: Avalanche Canada Forecasts
+
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
-
+  
 jobs:
   setup-python:
     uses: ./.github/workflows/setup-python-env.yml
-
+    
   use-python-env:
     needs: setup-python
     runs-on: ubuntu-latest
@@ -15,37 +17,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Cache pip download directory
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-${{ runner.os }}-
-
-      # Restore virtual environment (from setup-python job)
       - name: Restore virtual environment
         uses: actions/cache@v4
         with:
           path: venv
           key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
 
-      # Ensure dependencies are up to date
-      - name: Install dependencies (if needed)
+      - name: Use Python Environment
         run: |
           source venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
-        env:
-          PIP_CACHE_DIR: ~/.cache/pip
-
-      # Run your Python script
-      - name: Run BC Hydro Outages script
-        run: |
-          source venv/bin/activate
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python bchydro-outages/bchydro_outages.py
+          python bchydro-outages/bchydro_outages.py  # Run your script
         env:
           AGO_PORTAL_URL: ${{ secrets.AGO_PORTAL_URL }}
           AGO_USER: ${{ secrets.AGO_USER }}
