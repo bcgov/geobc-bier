@@ -38,3 +38,15 @@ jobs:
           AGO_PASS: ${{ secrets.AGO_PASS }}
           HYDROOUTAGES_ITEMID: ${{ secrets.HYDROOUTAGES_ITEMID }}
           HYDROOUTAGES_LFN_ITEMID: ${{ secrets.HYDROOUTAGES_LFN_ITEMID }}
+
+      - name: Cleanup workflow artifacts
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Finding artifacts to delete..."
+          artifacts=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[].id')
+          for artifact_id in $artifacts; do
+            echo "🧹 Deleting artifact ID: $artifact_id"
+            gh api repos/${{ github.repository }}/actions/artifacts/$artifact_id -X DELETE
+          done
