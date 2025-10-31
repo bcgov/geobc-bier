@@ -8,7 +8,7 @@ on:
 jobs:
   setup-python:
     uses: ./.github/workflows/setup-python-env.yml
-    
+
   use-python-env:
     needs: setup-python
     runs-on: ubuntu-latest
@@ -17,17 +17,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download virtual environment
-        uses: actions/download-artifact@v4
+      # Cache pip download directory
+      - name: Cache pip
+        uses: actions/cache@v4
         with:
-          name: python-venv
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            pip-${{ runner.os }}-
+
+      # Restore virtual environment (from setup-python job)
+      - name: Restore virtual environment
+        uses: actions/cache@v4
+        with:
           path: venv
+          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+      # Ensure dependencies are up to date
+      - name: Install dependencies (if needed)
+        run: |
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+        env:
+          PIP_CACHE_DIR: ~/.cache/pip
 
+      # Run your Python script
       - name: Run BC Hydro Outages script
         run: |
           source venv/bin/activate
@@ -39,15 +54,3 @@ jobs:
           AGO_PASS: ${{ secrets.AGO_PASS }}
           HYDROOUTAGES_ITEMID: ${{ secrets.HYDROOUTAGES_ITEMID }}
           HYDROOUTAGES_LFN_ITEMID: ${{ secrets.HYDROOUTAGES_LFN_ITEMID }}
-
-      - name: Cleanup workflow artifacts
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🔍 Finding artifacts to delete..."
-          artifacts=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts --jq '.artifacts[].id')
-          for artifact_id in $artifacts; do
-            echo "🧹 Deleting artifact ID: $artifact_id"
-            gh api repos/${{ github.repository }}/actions/artifacts/$artifact_id -X DELETE
-          done
