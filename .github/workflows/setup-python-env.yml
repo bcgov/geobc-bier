@@ -21,23 +21,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y krb5-user libkrb5-dev
 
-      - name: Cache pip (for speed)
+      - name: Cache virtual environment
+        id: cache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Create virtual environment
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Upload virtual environment artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-venv
           path: venv
+          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
+
+      - name: Create virtual environment (if not cached)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: python -m venv venv
+
+      - name: Install dependencies
+        run: |
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
