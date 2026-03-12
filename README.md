@@ -12,7 +12,7 @@ We encourage contributions. Please see our [Contributing document](<CONTRIBUTING
 ## Getting Help or Reporting an Issue
 To report bugs, issues, or feature requests please file an issue.
 
-## License
+## License 
     Copyright 2019 BC Provincial Government
 
     Licensed under the Apache License, Version 2.0 (the "License");
