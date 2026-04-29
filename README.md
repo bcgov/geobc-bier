@@ -1,7 +1,7 @@
 [![img](https://img.shields.io/badge/Lifecycle-Maturing-007EC6)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
 
 # geobc-bier
-Geospatial emergency management related components and scripts for GeoBC's Business Innovation and Emergency Response section.
+Geospatial emergency management related components and scripts for GeoBC's Business Innovation and Emergency Response section. 
 
 ## Contributing
 We encourage contributions. Please see our [Contributing document](<CONTRIBUTING.md>). BC Government employees should also ensure they review [BC Open Source Development Employee Guide](https://github.com/bcgov/BC-Policy-Framework-For-GitHub/blob/master/BC-Open-Source-Development-Employee-Guide/README.md)
