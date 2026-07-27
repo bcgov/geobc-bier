@@ -10,7 +10,7 @@ We encourage contributions. Please see our [Contributing document](<CONTRIBUTING
 ***Please do your best to write legible code and document your scripts.***  
 
 ## Getting Help or Reporting an Issue
-To report bugs, issues, or feature requests please file an issue.
+To report bugs, issues, or feature requests please file an issue. 
 
 ## License 
     Copyright 2019 BC Provincial Government
