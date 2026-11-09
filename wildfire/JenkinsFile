@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    triggers {
+        cron('H 6 * * *')   // optional: daily around 6am; remove for manual-only
+    }
+
+    options {
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '30'))
+    }
+
+    environment {
+        // Non-secret config the script reads via _get_env
+        // SERVER_NAME = '<server or alias>'
+
+        // Secrets from Jenkins Credentials (IDs are placeholders)
+        AGOL_USERNAME = credentials('<agol-username-credential-id>')
+        AGOL_PASSWORD = credentials('<agol-password-credential-id>')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/bcgov/geobc-bier.git', branch: 'main'
+            }
+        }
+
+        stage('Run wildfire sync') {
+            steps { 
+                withCredentials([
+                    string(credentialsId: 'ARCPRO_PYTHON_PATH', variable: 'PYTHON_PATH'),
+                    string(credentialsId: 'GEOPY_ARCPRO_TOOLS_PATH', variable: 'NETWORK_PATH'),
+                    usernamePassword(credentialsId: 'GEOHUB_MDykes', usernameVariable: 'AGO_USER', passwordVariable: 'AGO_PASS')])
+                bat '''
+                    "%PYTHON_PATH%" wildfire/wildfire-locations-perimeters.py "%AGO_USER%" "%AGO_PASS%"
+                '''
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Wildfire sync failed. Check the console output.'
+            // mail to: '<you@gov.bc.ca>', subject: "Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}", body: "${env.BUILD_URL}"
+        }
+    }
+}
