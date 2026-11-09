@@ -2,6 +2,11 @@ import sys
 import logging
 from arcgis.gis import GIS
 
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
 from core.utils import _get_env
 from feeds.wildfire_sync import sync_feature_layer
 
