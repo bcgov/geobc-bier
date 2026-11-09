@@ -1,22 +1,22 @@
+agent_label = "algorab"
+
 pipeline {
-    agent any
+    agent {
+       label "${agent_label}"
+    }
 
     triggers {
-        cron('H 6 * * *')   // optional: daily around 6am; remove for manual-only
+        cron('H * * * *')   // optional: daily around 6am; remove for manual-only
     }
 
     options {
-        timeout(time: 60, unit: 'MINUTES')
-        buildDiscarder(logRotator(numToKeepStr: '30'))
+        buildDiscarder(logRotator(daysToKeepStr: '7'))
+        disableConcurrentBuilds()
+        timeout(time: 1, unit: 'HOURS')
     }
 
     environment {
-        // Non-secret config the script reads via _get_env
-        // SERVER_NAME = '<server or alias>'
-
-        // Secrets from Jenkins Credentials (IDs are placeholders)
-        AGOL_USERNAME = credentials('<agol-username-credential-id>')
-        AGOL_PASSWORD = credentials('<agol-password-credential-id>')
+        MAIL_LIST = 'michael.dykes@gov.bc.ca'
     }
 
     stages {
@@ -40,9 +40,15 @@ pipeline {
     }
 
     post {
-        failure {
-            echo 'Wildfire sync failed. Check the console output.'
-            // mail to: '<you@gov.bc.ca>', subject: "Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}", body: "${env.BUILD_URL}"
+    failure {
+        mail to: MAIL_LIST, from: 'GeoBCAutomatedScriptsDoNotReply@gov.bc.ca',
+            subject: "Job Failed: ${env.JOB_NAME}", 
+            body: "Job Failed - \"${env.JOB_NAME}\" build: ${env.BUILD_NUMBER}\n\nView the log at:\n ${env.BUILD_URL}"
+        }
+    aborted {
+        mail to: MAIL_LIST, from: 'GeoBCAutomatedScriptsDoNotReply@gov.bc.ca',
+            subject: "Job Aborted: ${env.JOB_NAME}", 
+            body: "Job Aborted - \"${env.JOB_NAME}\" build: ${env.BUILD_NUMBER}\n\nView the log at:\n ${env.BUILD_URL}"
         }
     }
 }
