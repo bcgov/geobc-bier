@@ -31,7 +31,7 @@ from arcgis import geometry, features
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 _log = logging.getLogger(os.path.basename(os.path.splitext(__file__)[0]))
 
