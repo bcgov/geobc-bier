@@ -20,7 +20,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_t
 
 # Set script logger
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 _log = logging.getLogger("bier_arcgis_util")
